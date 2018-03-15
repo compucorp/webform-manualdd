@@ -1,0 +1,11 @@
+name = Webform-ManualDD
+core = 7.x
+
+version = "7.x-1.3"
+package = CiviCRM
+project = "custom"
+
+dependencies[] = civicrm (>=4.7)
+dependencies[] = webform (>=4.12)
+dependencies[] = options_element
+dependencies[] = webform_civicrm
