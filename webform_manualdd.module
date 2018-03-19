@@ -10,9 +10,10 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
     civicrm_initialize();
     $result = civicrm_api3('Extension', 'get', [
       'full_name' => "uk.co.compucorp.manualdirectdebit",
+      'sequential' => "1",
     ]);
 
-    if ($result['count'] < 0 && $result[0]['statusLabel'] != 'Enabled') {
+    if ($result['count'] < 0 && $result['values'][0]['statusLabel'] != 'Enabled') {
       return FALSE;
     }
 
