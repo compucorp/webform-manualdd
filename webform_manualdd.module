@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * Implements of hook form_alter()
+ */
+function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'wf_crm_configure_form') {
+
+    //  checks if extension exist
+    civicrm_initialize();
+    $result = civicrm_api3('Extension', 'get', [
+      'full_name' => "uk.co.compucorp.manualdirectdebit",
+      'sequential' => "1",
+    ]);
+
+    if ($result['count'] < 0 && $result['values'][0]['statusLabel'] != 'Enabled') {
+      return FALSE;
+    }
+
+    //  gets Payment Processor
+    $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', [
+      'name' => "Direct Debit",
+    ]);
+
+    //  gets custom Fields
+    $directDebitMandateCustomFields = civicrm_api3('CustomField', 'get', [
+      'sequential' => 1,
+      'custom_group_id' => "direct_debit_mandate",
+    ]);
+
+    //  checks if Payment Processor and  Direct Debit Mandate custom fields exist
+    if (!$directDebitMandateCustomFields['count'] || !empty($paymentProcessor['is_error'])) {
+      return FALSE;
+    }
+
+    $directDebitMandateCustomGroupId = 0;
+    $requiredFields = [];
+    $searchFields = [
+      'bank_name',
+      'account_holder_name',
+      'ac_number',
+      'sort_code',
+      'dd_code',
+    ];
+
+    // finds id of direct debit mandate custom group and required field
+    foreach ($directDebitMandateCustomFields['values'] as $value) {
+      if (!$directDebitMandateCustomGroupId) {
+        $directDebitMandateCustomGroupId = $value['custom_group_id'];
+      }
+
+      if (in_array($value['name'], $searchFields)) {
+        // find which field is required
+        $requiredFields[$value['name']] = $value['id'];
+      }
+    }
+
+    // settings for js
+    $settings = [
+      'webformManualDirectDebit' => [
+        'paymentProcessorId' => $paymentProcessor['id'],
+        'customGroupId' => $directDebitMandateCustomGroupId,
+      ],
+    ];
+    drupal_add_js($settings, 'setting');
+    drupal_add_js(drupal_get_path('module', 'webform_manualdd') . '/js/webform_manualdd.js');
+
+    //finds number of contacts
+    $numberOfContacts = $form['number_of_contacts']['#default_value'];
+
+    // sets   required fields and 'checked' attributes for each contacts
+    for ($i = 1; $i <= $numberOfContacts; $i++) {
+      $amountOfMandatesForCurrentUser = $form['contact_' . $i]['contact_' . $i . '_number_of_cg' . $directDebitMandateCustomGroupId]['#default_value'];
+      if (!isset($amountOfMandatesForCurrentUser)) {
+        continue;
+      }
+      for ($j = 1; $j <= $amountOfMandatesForCurrentUser; $j++) {
+        foreach ($requiredFields as $requiredField) {
+          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#attributes']['checked'] = 'checked';
+          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#required'] = TRUE;
+        }
+      }
+    }
+  }
+}
