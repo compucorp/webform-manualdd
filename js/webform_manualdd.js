@@ -9,14 +9,15 @@ CRM.$(document).ready(function ($) {
       if (!paymentProcessorId) {
         return false;
       }
-      var isPaymentProcessorEqualDirectDebit = $('[name=civicrm_1_contribution_1_contribution_payment_processor_id]').val() == paymentProcessorId;
 
-      if (isPaymentProcessorEqualDirectDebit) {
-        billingMessagesForAllContacts()
-      }
+        billingMessagesForAllContacts();
 
       $('[name=civicrm_1_contribution_1_contribution_payment_processor_id]').change(function () {
-        billingMessagesForAllContacts()
+        billingMessagesForAllContacts();
+      });
+
+      $('#edit-civicrm-1-contribution-1-contribution-contribution-page-id').change(function () {
+          billingMessagesForAllContacts();
       });
 
       function billingMessagesForAllContacts() {
@@ -27,9 +28,8 @@ CRM.$(document).ready(function ($) {
       }
 
       function createMessage(contactSerialNumber) {
-        var isPaymentProcessorEqualDirectDebit = $('[name=civicrm_1_contribution_1_contribution_payment_processor_id]').val() == paymentProcessorId;
         var isContactDirectDebitMandateFieldsEmpty = $('[name=contact_' + contactSerialNumber + '_number_of_cg' + customGroupId + ']').val() == '0';
-        if (isPaymentProcessorEqualDirectDebit && isContactDirectDebitMandateFieldsEmpty) {
+        if (isSelectedPaymentProcessorMustHaveMessage() && isContactDirectDebitMandateFieldsEmpty) {
           showErrorMessage(contactSerialNumber);
         } else {
           $('.wf-crm-billing-dd_mandate_contact_' + contactSerialNumber).remove();
@@ -86,6 +86,14 @@ CRM.$(document).ready(function ($) {
         }
 
         return contactLabel;
+      }
+
+      function isSelectedPaymentProcessorMustHaveMessage() {
+        var isPaymentProcessorUserSelect = $('[name=civicrm_1_contribution_1_contribution_payment_processor_id]').val() == "create_civicrm_webform_element";
+        var isDirectDebitPaymentProcessorInOptionList = 'Direct Debit' == $('[name=civicrm_1_contribution_1_contribution_payment_processor_id] option[value=' + paymentProcessorId + ']').html()
+        var isPaymentProcessorEqualDirectDebit = $('[name=civicrm_1_contribution_1_contribution_payment_processor_id]').val() == paymentProcessorId;
+
+        return (isPaymentProcessorUserSelect && isDirectDebitPaymentProcessorInOptionList) || isPaymentProcessorEqualDirectDebit
       }
     }
   }
