@@ -44,7 +44,7 @@ CRM.$(document).ready(function ($) {
       function showErrorMessage(contactSerialNumber) {
         var selectedPage = $('[name=civicrm_1_contribution_1_contribution_contribution_page_id]');
         var extensionErrorMessageBlock = $('.wf-crm-billing-dd_mandate_contact_' + contactSerialNumber);
-        var message = Drupal.t('You must enable an Direct Debit mandate fieldset for Contact% in order to process transactions.',
+        var message = Drupal.t('You must enable Direct Debit mandate fieldset for Contact% in order to process transactions.',
           {'Contact%': getContactLabel(contactSerialNumber)});
 
         var isErrorMessageExist = extensionErrorMessageBlock.length;
