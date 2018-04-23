@@ -78,6 +78,7 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
         foreach ($requiredFields as $requiredField) {
           $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#attributes']['checked'] = 'checked';
           $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#required'] = TRUE;
+          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_createmode']['#default_value'] = 1;
         }
       }
     }
