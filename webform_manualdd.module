@@ -35,7 +35,8 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
 
     $directDebitMandateCustomGroupId = 0;
     $requiredFields = [];
-    $searchFields = [
+    $fieldsWithAutoCheck = [];
+    $searchRequiredFields = [
       'bank_name',
       'account_holder_name',
       'ac_number',
@@ -43,16 +44,28 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
       'dd_code',
     ];
 
+    $searchFieldsAutoCheck = [
+      'dd_ref',
+      'start_date',
+      'originator_number',
+    ];
+
+
     // finds id of direct debit mandate custom group and required field
     foreach ($directDebitMandateCustomFields['values'] as $value) {
       if (!$directDebitMandateCustomGroupId) {
         $directDebitMandateCustomGroupId = $value['custom_group_id'];
       }
 
-      if (in_array($value['name'], $searchFields)) {
+      if (in_array($value['name'], $searchRequiredFields)) {
         // find which field is required
         $requiredFields[$value['name']] = $value['id'];
       }
+      if (in_array($value['name'], $searchFieldsAutoCheck)) {
+        // find which field is must to be selected
+        $fieldsWithAutoCheck[$value['name']] = $value['id'];
+      }
+      $fieldsWithAutoCheck = array_merge($requiredFields, $fieldsWithAutoCheck);
     }
 
     // settings for js
@@ -75,10 +88,12 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
         continue;
       }
       for ($j = 1; $j <= $amountOfMandatesForCurrentUser; $j++) {
+        $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_createmode']['#default_value'] = 1;
         foreach ($requiredFields as $requiredField) {
           $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#attributes']['checked'] = 'checked';
-          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $requiredField]['#required'] = TRUE;
-          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_createmode']['#default_value'] = 1;
+        }
+        foreach ($fieldsWithAutoCheck as $checkedField) {
+          $form['contact_' . $i][$i . 'cg' . $directDebitMandateCustomGroupId . '_wrapper'][$i . 'cg' . $directDebitMandateCustomGroupId . $j . '_fieldset']['civicrm_' . $i . '_contact_' . $j . '_cg' . $directDebitMandateCustomGroupId . '_custom_' . $checkedField]['#required'] = TRUE;
         }
       }
     }
