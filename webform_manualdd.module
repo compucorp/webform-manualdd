@@ -18,8 +18,10 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
     }
 
     //  gets Payment Processor
-    $paymentProcessor = civicrm_api3('PaymentProcessor', 'getsingle', [
+    $paymentProcessor = civicrm_api3('PaymentProcessor', 'getvalue', [
+      'return' => "id",
       'name' => "Direct Debit",
+      'is_test' => 0,
     ]);
 
     //  gets custom Fields
@@ -29,7 +31,7 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
     ]);
 
     //  checks if Payment Processor and  Direct Debit Mandate custom fields exist
-    if (!$directDebitMandateCustomFields['count'] || !empty($paymentProcessor['is_error'])) {
+    if (!$directDebitMandateCustomFields['count'] || empty($paymentProcessor)) {
       return FALSE;
     }
 
@@ -61,7 +63,7 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
     // settings for js
     $settings = [
       'webformManualDirectDebit' => [
-        'paymentProcessorId' => $paymentProcessor['id'],
+        'paymentProcessorId' => $paymentProcessor,
         'customGroupId' => $directDebitMandateCustomGroupId,
       ],
     ];
