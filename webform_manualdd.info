@@ -1,7 +1,7 @@
 name = Webform-ManualDD
 core = 7.x
 
-version = 7.x-4.1
+version = 7.x-4.2
 package = CiviCRM
 project = "custom"
 
