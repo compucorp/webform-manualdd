@@ -102,7 +102,7 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
  * @param object $node
  * @param int $contributionRecurId
  */
-function webformmembershipextras_preCreatingUpfrontContributions($node, $contributionRecurId) {
+function webform_manualdd_webformmembershipextras_preCreatingUpfrontContributions($node, $contributionRecurId) {
   $isDirectDebitPaymentProcessor = _webformmanualdd_isPaymentPlanPaidWithDirectDebit($contributionRecurId);
   if (!$isDirectDebitPaymentProcessor) {
     return;
