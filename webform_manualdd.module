@@ -89,3 +89,77 @@ function webform_manualdd_form_alter(&$form, &$form_state, $form_id) {
     }
   }
 }
+
+/**
+ * Implements webformmembershipextras_preCreatingUpfrontContributions
+ * hook that is defined inside "Webform CiviCRM Membership Extras" module
+ * to allow us to attach the recurring contribution and the first
+ * installment to the created mandate, and to allow us to alter the
+ * installments receive date to follow Direct Debit dates calculation
+ * logic, in case the user is paying with Direct Debit payment processor,
+ * right before creating the rest of the installments.
+ *
+ * @param object $node
+ * @param int $contributionRecurId
+ */
+function webformmembershipextras_preCreatingUpfrontContributions($node, $contributionRecurId) {
+  $isDirectDebitPaymentProcessor = _webformmanualdd_isPaymentPlanPaidWithDirectDebit($contributionRecurId);
+  if (!$isDirectDebitPaymentProcessor) {
+    return;
+  }
+
+  // Attaching the mandate to both the first installment and the recurring contribution
+  $contactId = _webformmanualdd_getContactId($node);
+  $storageManager = new CRM_ManualDirectDebit_Common_MandateStorageManager();
+  $mandateId = $storageManager->getLastInsertedMandateId($contactId);
+  $storageManager->assignMandate($mandateId, $contactId);
+}
+
+/**
+ * Checks if the payment plan is paid with direct debit
+ * or not.
+ *
+ * @param int $contributionRecurId
+ * @return bool
+ */
+function _webformmanualdd_isPaymentPlanPaidWithDirectDebit($contributionRecurId) {
+  $paymentProcessorId = civicrm_api3('ContributionRecur', 'get', [
+    'sequential' => 1,
+    'return' => ['payment_processor_id'],
+    'id' => $contributionRecurId,
+  ]);
+  if (empty($paymentProcessorId['values'][0]['payment_processor_id'])) {
+    return FALSE;
+  }
+  $paymentProcessorId = $paymentProcessorId['values'][0]['payment_processor_id'];
+
+  $paymentProcessorName = civicrm_api3('PaymentProcessor', 'get', [
+    'sequential' => 1,
+    'return' => ['name'],
+    'id' => $paymentProcessorId,
+  ]);
+  if (empty($paymentProcessorName ['values'][0]['name'])) {
+    return FALSE;
+  }
+  $paymentProcessorName = $paymentProcessorName['values'][0]['name'];
+
+
+  return $paymentProcessorName === 'Direct Debit';
+}
+
+/**
+ * Gets the CiviCRM contact associated with the
+ * webform submission.
+ *
+ * @param $node
+ * @return |null
+ */
+function _webformmanualdd_getContactId($node) {
+  $civiWebformEntityProperty = _membershipextras_getCiviWebformPostprocessorPropertyValue($node, 'ent');
+
+  if (empty($civiWebformEntityProperty['contact'][1]['id'])) {
+    return NULL;
+  }
+
+  return $civiWebformEntityProperty['contact'][1]['id'];
+}
