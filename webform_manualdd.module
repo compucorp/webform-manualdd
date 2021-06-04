@@ -113,6 +113,18 @@ function webformmembershipextras_preCreatingUpfrontContributions($node, $contrib
   $storageManager = new CRM_ManualDirectDebit_Common_MandateStorageManager();
   $mandateId = $storageManager->getLastInsertedMandateId($contactId);
   $storageManager->assignMandate($mandateId, $contactId);
+
+
+  $settingsManager = new CRM_ManualDirectDebit_Common_SettingsManager();
+  $settings = $settingsManager->getManualDirectDebitSettings();
+  $mandateInfo = $storageManager->getMandate($mandateId);
+
+  // Updating both the first installment receive date and the recurring contribution start date
+  // to follow Direct Debit dates calculation logic.
+  $contributionDataGenerator = new CRM_ManualDirectDebit_Hook_Custom_Contribution_ContributionDataGenerator($contactId, $settings);
+  $contributionDataGenerator->setMandateStartDate($mandateInfo->start_date);
+  $contributionDataGenerator->generateContributionFieldsValues();
+  $contributionDataGenerator->saveGeneratedContributionValues();
 }
 
 /**
