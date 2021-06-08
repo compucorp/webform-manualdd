@@ -1,0 +1,21 @@
+<?php
+
+function webform_manualdd_install() {
+  _webform_manualdd_make_hook_priority_lower_than_membershipextras_module();
+}
+
+function webform_manualdd_update_1000() {
+  _webform_manualdd_make_hook_priority_lower_than_membershipextras_module();
+}
+
+/**
+ * Manual direct debit module and extension depend on Membershipextras
+ * Module and extension, and thus hooks in this module should be executed
+ * after the hooks in Membershipextras.
+ * Here we achieve that by increasing the weight of this module to be
+ * higher than Membershipextras module, since hooks are executed
+ * for modules with lower weight values first.
+ */
+function _webform_manualdd_make_hook_priority_lower_than_membershipextras_module() {
+  db_query("UPDATE {system} SET weight = 1001 WHERE name = 'webform_manualdd'");
+}
