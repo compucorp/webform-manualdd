@@ -108,22 +108,9 @@ function webform_manualdd_webformmembershipextras_preCreatingUpfrontContribution
     return;
   }
 
-  // Attaching the mandate to both the first installment and the recurring contribution
   $contactId = _webformmanualdd_getContactId($node);
-  $storageManager = new CRM_ManualDirectDebit_Common_MandateStorageManager();
-  $mandateId = $storageManager->getLastInsertedMandateId($contactId);
-  $storageManager->assignMandate($mandateId, $contactId);
-  
-  $settingsManager = new CRM_ManualDirectDebit_Common_SettingsManager();
-  $settings = $settingsManager->getManualDirectDebitSettings();
-  $mandateInfo = $storageManager->getMandate($mandateId);
-
-  // Updating both the first installment receive date and the recurring contribution start date
-  // to follow Direct Debit dates calculation logic.
-  $contributionDataGenerator = new CRM_ManualDirectDebit_Hook_Custom_Contribution_ContributionDataGenerator($contactId, $settings);
-  $contributionDataGenerator->setMandateStartDate($mandateInfo->start_date);
-  $contributionDataGenerator->generateContributionFieldsValues();
-  $contributionDataGenerator->saveGeneratedContributionValues();
+  _webformmanualdd_attachMandateToPayment($contactId);
+  _webformmanualdd_updatePaymentDates($contributionRecurId);
 }
 
 /**
@@ -172,4 +159,61 @@ function _webformmanualdd_getContactId($node) {
   }
 
   return $civiWebformEntityProperty['contact'][1]['id'];
+}
+
+/**
+ * Attaches the mandate to both the first installment and the recurring contribution.
+ *
+ * @param $contactId
+ */
+function _webformmanualdd_attachMandateToPayment($contactId) {
+  $storageManager = new CRM_ManualDirectDebit_Common_MandateStorageManager();
+  $mandateId = $storageManager->getLastInsertedMandateId($contactId);
+  $storageManager->assignMandate($mandateId, $contactId);
+}
+
+/**
+ * Updates both the first installment receive date and the recurring contribution start date
+ * to follow Direct Debit dates calculation logic.
+ *
+ * @param int $contributionRecurId
+ */
+function _webformmanualdd_updatePaymentDates($contributionRecurId) {
+  $hookParams = [
+    'payment_instrument_id' => 'direct_debit',
+  ];
+
+  // If it is a monthly or quarterly, then there is only one (the first)
+  // installment at this point, if it is annual, then the first installment
+  // in the new term (in case or renewal) is the last contribution attached
+  // to the recurring contribution, and that is why we order by 'id DESC' with 'limit => 1'.
+  $firstInstallment = civicrm_api3('Contribution', 'get', [
+    'sequential' => 1,
+    'contribution_recur_id' => $contributionRecurId,
+    'options' => ['sort' => 'id DESC', 'limit' => 1],
+  ])['values'][0];
+  $firstInstallmentReceiveDate = $firstInstallment['receive_date'];
+
+  // calling the hook will alter the value $firstInstallmentReceiveDate to follow direct debit dates logic.
+  $dispatcher = new CRM_MembershipExtras_Hook_CustomDispatch_CalculateContributionReceiveDate(1, $firstInstallmentReceiveDate, $hookParams);
+  $dispatcher->dispatch();
+
+  $frequencyUnit = civicrm_api3('ContributionRecur', 'getvalue', [
+    'return' => 'frequency_unit',
+    'id' => $contributionRecurId,
+  ]);
+  $newCycleDay = CRM_MembershipExtras_Service_CycleDayCalculator::calculate($firstInstallmentReceiveDate, $frequencyUnit);
+
+  civicrm_api3('Contribution', 'create', [
+    'sequential' => 1,
+    'id' => $firstInstallment['id'],
+    'receive_date' => $firstInstallmentReceiveDate,
+  ]);
+
+  civicrm_api3('ContributionRecur', 'create', [
+    'sequential' => 1,
+    'id' => $contributionRecurId,
+    'start_date' => $firstInstallmentReceiveDate,
+    'cycle_day' => $newCycleDay
+  ]);
 }
