@@ -1,7 +1,7 @@
 name = Webform-ManualDD
 core = 7.x
 
-version = 7.x-5.2
+version = 7.x-5.3
 package = MembershipExtras
 project = "custom"
 
